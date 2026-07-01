@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: spring-security-jwt-exercise
+  datasource:
+    url: jdbc:mysql://localhost:3306/mydatabase
+    username: myuser
+    password: verysecret
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        jdbc:
+          time_zone: Asia/Jakarta
