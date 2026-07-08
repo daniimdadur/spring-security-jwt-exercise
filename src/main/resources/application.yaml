@@ -13,3 +13,8 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
         jdbc:
           time_zone: Asia/Jakarta
+app:
+  jwt:
+    secret: wdgFBVS9P2joCLJ3eNmknbg3IXlkZBpMOgdpriotWH0=
+    access-expiration: 60
+    refresh-expiration: 1440

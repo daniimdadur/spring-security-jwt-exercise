@@ -12,12 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AuthenticationRes {
 
-    @JsonProperty("access_token")
     private String accessToken;
-
-    @JsonProperty("refresh_token")
     private String refreshToken;
-
-    @JsonProperty("expired_at")
     private Long expiredAt;
 }
