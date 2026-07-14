@@ -7,9 +7,7 @@ import lombok.*;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class AuthenticationRes {
+public class TokenRes {
     private String accessToken;
-    private Long accessTokenExpiration;
-    private String refreshToken;
-    private Long refreshTokenExpiration;
+    private Long expiredAt;
 }

@@ -15,6 +15,7 @@ spring:
           time_zone: Asia/Jakarta
 app:
   jwt:
-    secret: wdgFBVS9P2joCLJ3eNmknbg3IXlkZBpMOgdpriotWH0=
+    access-secret: wdgFBVS9P2joCLJ3eNmknbg3IXlkZBpMOgdpriotWH0=
+    refresh-secret: OIGzn/d0OfjdLL4PhTgHLrv0Wme/Jvc2ls+VQI4cloQ=
     access-expiration: 60
     refresh-expiration: 1440

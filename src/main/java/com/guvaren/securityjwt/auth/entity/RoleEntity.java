@@ -1,7 +1,6 @@
 package com.guvaren.securityjwt.auth.entity;
 
 import com.guvaren.securityjwt.auth.enums.Roles;
-import com.guvaren.securityjwt.util.CommonUtil;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -21,11 +20,4 @@ public class RoleEntity {
     @Column(name = "role")
     @Enumerated(EnumType.STRING)
     private Roles role;
-
-    @PrePersist
-    private void generateId() {
-        if (this.id == null) {
-            this.id = CommonUtil.getUUID();
-        }
-    }
 }

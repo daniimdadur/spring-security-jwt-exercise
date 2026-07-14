@@ -20,7 +20,7 @@ public class UserEntity {
     @Column(name = "uid", length = 36)
     private String id;
 
-    @Column(name = "firs_name", length = 64)
+    @Column(name = "first_name", length = 64)
     private String firstName;
 
     @Column(name = "last_name", length = 64)
@@ -40,12 +40,5 @@ public class UserEntity {
     private Set<RoleEntity> roles = new HashSet<>();
 
     @OneToMany(mappedBy = "user")
-    private Set<TokenEntity> tokens = new HashSet<>();
-
-    @PrePersist
-    private void generateId() {
-        if (this.id == null) {
-            this.id = CommonUtil.getUUID();
-        }
-    }
+    private Set<RefreshTokenEntity> tokens = new HashSet<>();
 }

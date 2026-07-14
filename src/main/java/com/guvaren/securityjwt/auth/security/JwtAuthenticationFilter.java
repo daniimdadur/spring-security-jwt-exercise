@@ -1,8 +1,7 @@
 package com.guvaren.securityjwt.auth.security;
 
-import com.guvaren.securityjwt.auth.repository.TokenRepo;
 import com.guvaren.securityjwt.auth.service.CustomUserDetailsService;
-import com.guvaren.securityjwt.auth.service.JwtProviderService;
+import com.guvaren.securityjwt.auth.service.AccessJwtService;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.MalformedJwtException;
@@ -11,6 +10,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -25,15 +25,14 @@ import java.io.IOException;
 import java.util.Map;
 
 @Component
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-    private final TokenRepo tokenRepo;
     private final CustomUserDetailsService userDetailsService;
-    private final JwtProviderService jwtProviderService;
+    private final AccessJwtService accessJwtService;
 
-    public JwtAuthenticationFilter(TokenRepo tokenRepo, CustomUserDetailsService userDetailsService, JwtProviderService jwtProviderService) {
-        this.tokenRepo = tokenRepo;
+    public JwtAuthenticationFilter(CustomUserDetailsService userDetailsService, AccessJwtService accessJwtService) {
         this.userDetailsService = userDetailsService;
-        this.jwtProviderService = jwtProviderService;
+        this.accessJwtService = accessJwtService;
     }
 
     @Override
@@ -52,22 +51,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
-            if (!isTokenValidInDb(jwt)) {
-                logger.debug("Token invalid or expired in database");
-                filterChain.doFilter(request, response);
-                return;
-            }
+//            if (!isTokenValidInDb(jwt)) {
+//                log.debug("Token invalid or expired in database");
+//                filterChain.doFilter(request, response);
+//                return;
+//            }
 
-            String username = this.jwtProviderService.extractUsername(jwt);
+            String username = this.accessJwtService.extractAccessUsername(jwt);
             if (username != null && !isAlreadyAuthenticated()) {
                 authenticateUser(request, jwt, username);
             }
         } catch (JwtException e) {
-//            logger.error("JWT processing failed: {}", e.getMessage());
+            log.error("JWT processing failed: {}", e.getMessage());
             handleJwtException(response, e);
             return;
         } catch (Exception e) {
-//            logger.error("Authentication failed: {}", e.getMessage());
+            log.error("Authentication failed: {}", e.getMessage());
             filterChain.doFilter(request, response);
             return;
         }
@@ -96,11 +95,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return jwt;
     }
 
-    private boolean isTokenValidInDb(String jwt) {
-        return this.tokenRepo.findByToken(jwt)
-                .map(token -> !token.isRevoked() && !token.isExpired())
-                .orElse(false);
-    }
+//    private boolean isTokenValidInDb(String jwt) {
+//        return this.tokenRepo.findByToken(jwt)
+//                .map(token -> !token.isRevoked() && !token.isExpired())
+//                .orElse(false);
+//    }
 
     private boolean isAlreadyAuthenticated() {
         Authentication existingAuth = SecurityContextHolder.getContext().getAuthentication();
@@ -109,7 +108,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private void authenticateUser(HttpServletRequest request, String jwt, String username) {
         UserDetails userDetails = loadUserDetailsWithCache(username);
-        if (this.jwtProviderService.isTokenValid(jwt)) {
+        if (this.accessJwtService.isAccessTokenValid(jwt)) {
             UsernamePasswordAuthenticationToken authentication =
                     createAuthenticationToken(userDetails);
 
@@ -128,7 +127,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             UserDetails userDetails) {
         return new UsernamePasswordAuthenticationToken(
                 userDetails,       // Principal adalah UserDetails object
-                null,              // Credentials diset null untuk keamanan
+                null,              // Credentials/password diset null untuk keamanan
                 userDetails.getAuthorities()
         );
     }

@@ -1,7 +1,6 @@
 package com.guvaren.securityjwt.auth.entity;
 
 import com.guvaren.securityjwt.auth.enums.TokenType;
-import com.guvaren.securityjwt.util.CommonUtil;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -12,7 +11,7 @@ import lombok.*;
 @Builder
 @Entity
 @Table(name = "t_token")
-public class TokenEntity {
+public class RefreshTokenEntity {
 
     @Id
     @Column(name = "tid", length = 36)
@@ -38,11 +37,4 @@ public class TokenEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     public UserEntity user;
-
-    @PrePersist
-    private void generateId() {
-        if (this.id == null) {
-            this.id = CommonUtil.getUUID();
-        }
-    }
 }
