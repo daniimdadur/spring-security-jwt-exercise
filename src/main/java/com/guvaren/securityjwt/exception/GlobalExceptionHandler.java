@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import javax.security.sasl.AuthenticationException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -29,24 +30,9 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, errors);
     }
 
-    @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<ResponseError> handleBadRequestException(BadRequestException ex) {
-        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ResponseError> handleIllegalArgumentException(IllegalArgumentException ex) {
-        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
-    }
-
-    @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<ResponseError> handleNotFoundException(NotFoundException ex) {
-        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
-    }
-
-    @ExceptionHandler(DuplicateException.class)
-    public ResponseEntity<ResponseError> handleDuplicateException(DuplicateException ex) {
-        return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ResponseError> handleAuthenticationException(AuthenticationException ex) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
     @ExceptionHandler(PaymentServiceException.class)
@@ -59,6 +45,16 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ResponseError> handleNotFoundException(NotFoundException ex) {
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(DuplicateException.class)
+    public ResponseEntity<ResponseError> handleDuplicateException(DuplicateException ex) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ResponseError> handleException(Exception ex) {
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
@@ -67,9 +63,9 @@ public class GlobalExceptionHandler {
     private ResponseEntity<ResponseError> buildResponse(HttpStatus status, Object errors) {
         return ResponseEntity
                 .status(status)
-                .body(new ResponseError(
-                        status.value(),
-                        status.name(),
+                .body(ResponseError.of(
+                        status,
+                        status.getReasonPhrase(),
                         errors
                 ));
     }
