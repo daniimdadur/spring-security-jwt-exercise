@@ -15,7 +15,6 @@ import java.io.IOException;
 
 @Component
 public class JwtAccessDeniedHandler implements AccessDeniedHandler {
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public void handle(@NonNull HttpServletRequest request,
@@ -28,6 +27,6 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
                 HttpStatus.FORBIDDEN.getReasonPhrase(),
                 accessDeniedException.getMessage());
 
-        this.objectMapper.writeValue(response.getWriter(), bodyError);
+        new ObjectMapper().writeValue(response.getWriter(), bodyError);
     }
 }

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -60,16 +61,21 @@ public class RefreshJwtService {
         return claims != null ? claims.getSubject() : null;
     }
 
-    public long expiredAt(String jwt) {
+    public long getRemainingMinutes(String jwt) {
         try {
             Claims claims = getClaims(jwt);
-            if (claims == null) return 0;
+            if (claims == null || claims.getExpiration() == null) {
+                return 0;
+            }
 
-            long nowMillis = Instant.now().toEpochMilli();
-            long expirationMillis = claims.getExpiration().getTime();
+            Instant now = Instant.now();
+            Instant expiration = claims.getExpiration().toInstant();
+            if (expiration.isBefore(now)) {
+                return 0;
+            }
 
-            return Math.max(0, (expirationMillis - nowMillis) / 1000 / 60);
-        } catch (ExpiredJwtException e) {
+            return ChronoUnit.MINUTES.between(now, expiration);
+        } catch (JwtException | IllegalArgumentException e) {
             return 0;
         }
     }

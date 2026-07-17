@@ -1,6 +1,5 @@
 package com.guvaren.securityjwt.master.fakultas.controller;
 
-import com.guvaren.securityjwt.base.BaseController;
 import com.guvaren.securityjwt.base.Response;
 import com.guvaren.securityjwt.master.fakultas.model.FakultasReq;
 import com.guvaren.securityjwt.master.fakultas.model.FakultasRes;
@@ -16,18 +15,18 @@ import java.util.Optional;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/fakultas")
-public class FakultasController extends BaseController<FakultasRes> {
+public class FakultasController {
     private final FakultasService fakultasService;
 
     @GetMapping
-    @PreAuthorize("hasAuthority('ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_USER', 'ROLE_ADMIN')")
     public ResponseEntity<Response<List<FakultasRes>>> get() {
         List<FakultasRes> result = this.fakultasService.get();
         return ResponseEntity.ok(Response.success(result));
     }
 
     @GetMapping(value = "/{id}")
-    @PreAuthorize("hasAuthority('ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_USER', 'ROLE_ADMIN')")
     public ResponseEntity<Response<Optional<FakultasRes>>> get(@PathVariable String id) {
         Optional<FakultasRes> result = this.fakultasService.getById(id);
         return ResponseEntity.ok(Response.success(result));

@@ -1,17 +1,16 @@
 package com.guvaren.securityjwt.master.auth.security;
 
+import com.guvaren.securityjwt.exception.JwtAuthenticationException;
 import com.guvaren.securityjwt.master.auth.service.CustomUserDetailsService;
 import com.guvaren.securityjwt.master.auth.service.AccessJwtService;
-import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.MalformedJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,24 +18,21 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
-import java.util.Map;
 
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final CustomUserDetailsService userDetailsService;
     private final AccessJwtService accessJwtService;
-
-    public JwtAuthenticationFilter(CustomUserDetailsService userDetailsService, AccessJwtService accessJwtService) {
-        this.userDetailsService = userDetailsService;
-        this.accessJwtService = accessJwtService;
-    }
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(@NonNull HttpServletRequest request,
+                                    @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         if (isAuthEndpoint(request)) {
             filterChain.doFilter(request, response);
@@ -45,33 +41,46 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             String jwt = extractJwtFromRequest(request);
-
             if (jwt == null) {
-                filterChain.doFilter(request, response);
-                return;
+                throw new JwtException("JWT cannot be null or empty");
             }
 
-//            if (!isTokenValidInDb(jwt)) {
-//                log.debug("Token invalid or expired in database");
-//                filterChain.doFilter(request, response);
-//                return;
-//            }
+            if (!isAlreadyAuthenticated()) {
+                if (!this.accessJwtService.isAccessTokenValid(jwt)) {
+                    throw new JwtException("access token has expired or is invalid");
+                }
 
-            String username = this.accessJwtService.extractAccessUsername(jwt);
-            if (username != null && !isAlreadyAuthenticated()) {
-                authenticateUser(request, jwt, username);
+                String username = this.accessJwtService.extractAccessUsername(jwt);
+
+                UserDetails userDetails =
+                        this.userDetailsService.loadUserByUsername(username);
+
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails,
+                                null,
+                                userDetails.getAuthorities()
+                        );
+
+                authentication.setDetails(
+                        new WebAuthenticationDetailsSource()
+                                .buildDetails(request)
+                );
+
+                SecurityContextHolder.getContext()
+                        .setAuthentication(authentication);
             }
-        } catch (JwtException e) {
-            log.error("JWT processing failed: {}", e.getMessage());
-            handleJwtException(response, e);
-            return;
-        } catch (Exception e) {
-            log.error("Authentication failed: {}", e.getMessage());
+
             filterChain.doFilter(request, response);
-            return;
+        } catch (JwtException e) {
+            SecurityContextHolder.clearContext();
+            log.warn("JWT authentication failed: {}", e.getMessage());
+            this.jwtAuthenticationEntryPoint.commence(
+                    request,
+                    response,
+                    new JwtAuthenticationException(e.getMessage())
+            );
         }
-
-        filterChain.doFilter(request, response);
     }
 
     private boolean isAuthEndpoint(HttpServletRequest request) {
@@ -86,72 +95,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return null;
         }
-        String jwt = authHeader.substring(7);
 
-        if (jwt.length() < 10) {
-            return null;
-        }
-
-        return jwt;
+        return authHeader.substring(7);
     }
-
-//    private boolean isTokenValidInDb(String jwt) {
-//        return this.tokenRepo.findByToken(jwt)
-//                .map(token -> !token.isRevoked() && !token.isExpired())
-//                .orElse(false);
-//    }
 
     private boolean isAlreadyAuthenticated() {
         Authentication existingAuth = SecurityContextHolder.getContext().getAuthentication();
         return existingAuth != null && existingAuth.isAuthenticated();
-    }
-
-    private void authenticateUser(HttpServletRequest request, String jwt, String username) {
-        UserDetails userDetails = loadUserDetailsWithCache(username);
-        if (this.accessJwtService.isAccessTokenValid(jwt)) {
-            UsernamePasswordAuthenticationToken authentication =
-                    createAuthenticationToken(userDetails);
-
-            //baris dibawah ini untuk keperluan audit atau logging
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-        }
-    }
-
-    private UserDetails loadUserDetailsWithCache(String username) {
-        // Implement caching dengan @Cacheable di service layer
-        return this.userDetailsService.loadUserByUsername(username);
-    }
-
-    private UsernamePasswordAuthenticationToken createAuthenticationToken(
-            UserDetails userDetails) {
-        return new UsernamePasswordAuthenticationToken(
-                userDetails,       // Principal adalah UserDetails object
-                null,              // Credentials/password diset null untuk keamanan
-                userDetails.getAuthorities()
-        );
-    }
-
-    private void handleJwtException(HttpServletResponse response, JwtException e)
-            throws IOException {
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-
-        String errorMessage;
-        if (e instanceof ExpiredJwtException) {
-            errorMessage = "Token has expired";
-        } else if (e instanceof MalformedJwtException) {
-            errorMessage = "Invalid token format";
-        } else {
-            errorMessage = "Invalid token";
-        }
-
-        Map<String, String> body = Map.of(
-                "error", HttpStatus.UNAUTHORIZED.getReasonPhrase(),
-                "message", errorMessage
-        );
-
-        new ObjectMapper().writeValue(response.getWriter(), body);
     }
 }

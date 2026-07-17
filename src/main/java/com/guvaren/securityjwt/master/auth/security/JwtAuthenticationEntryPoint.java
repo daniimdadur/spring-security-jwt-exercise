@@ -15,7 +15,6 @@ import java.io.IOException;
 
 @Component
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public void commence(@NonNull HttpServletRequest request,
@@ -29,6 +28,6 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
                 authException.getMessage()
         );
 
-        this.objectMapper.writeValue(response.getWriter(), bodyError);
+        new ObjectMapper().writeValue(response.getWriter(), bodyError);
     }
 }

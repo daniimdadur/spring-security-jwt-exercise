@@ -17,5 +17,5 @@ app:
   jwt:
     access-secret: wdgFBVS9P2joCLJ3eNmknbg3IXlkZBpMOgdpriotWH0=
     refresh-secret: OIGzn/d0OfjdLL4PhTgHLrv0Wme/Jvc2ls+VQI4cloQ=
-    access-expiration: 60
+    access-expiration: 1
     refresh-expiration: 1440

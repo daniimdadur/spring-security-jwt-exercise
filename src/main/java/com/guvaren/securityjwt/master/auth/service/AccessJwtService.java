@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -31,6 +32,7 @@ public class AccessJwtService {
         this.jwtAccessExpiration = TimeUnit.MINUTES.toMillis(accessExpirationMinutes);
     }
 
+    //auth service
     public String generateAccessToken(String email) {
         UserDetails userDetails = this.userDetailsService.loadUserByUsername(email);
         Map<String, Object> claims = Map.of("type", "access");
@@ -43,25 +45,37 @@ public class AccessJwtService {
                 .compact();
     }
 
+    //filter
     public String extractAccessUsername(String jwt) {
         Claims claims = getClaims(jwt);
         return claims != null ? claims.getSubject() : null;
     }
 
-    public long expiredAt(String jwt) {
+    //auth service
+    public long getRemainingMinutes(String jwt) {
         try {
             Claims claims = getClaims(jwt);
-            if (claims == null) return 0;
+            if (claims == null || claims.getExpiration() == null) {
+                return 0;
+            }
 
-            long nowMillis = Instant.now().toEpochMilli();
-            long expirationMillis = claims.getExpiration().getTime();
+            Instant now = Instant.now();
+            Instant expiration = claims.getExpiration().toInstant();
 
-            return Math.max(0, (expirationMillis - nowMillis) / 1000 / 60);
-        } catch (ExpiredJwtException e) {
+            // Jika waktu kadaluarsa sudah lewat dari waktu sekarang
+            if (expiration.isBefore(now)) {
+                return 0;
+            }
+
+            // Menghitung selisih menit dengan aman menggunakan ChronoUnit
+            return ChronoUnit.MINUTES.between(now, expiration);
+        } catch (JwtException | IllegalArgumentException e) {
+            // Menangani jika token rusak, tanda tangan salah, atau formatnya tidak valid
             return 0;
         }
     }
 
+    //filter
     public boolean isAccessTokenValid(String token) {
         try {
             Claims claims = getClaims(token);

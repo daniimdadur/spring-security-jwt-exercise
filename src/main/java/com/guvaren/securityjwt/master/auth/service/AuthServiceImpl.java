@@ -1,5 +1,6 @@
 package com.guvaren.securityjwt.master.auth.service;
 
+import com.guvaren.securityjwt.exception.DuplicateException;
 import com.guvaren.securityjwt.master.auth.dto.req.AuthenticationReq;
 import com.guvaren.securityjwt.master.auth.dto.req.RegistrationReq;
 import com.guvaren.securityjwt.master.auth.dto.res.AuthenticationRes;
@@ -38,7 +39,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthenticationRes register(RegistrationReq req) {
         this.userRepo.findByEmail(req.getEmail()).ifPresent(duplicate -> {
-            throw new IllegalArgumentException("Email already exists");
+            throw new DuplicateException("Email already exists");
         });
         UserEntity user = UserEntity.builder()
                 .id(CommonUtil.getUUID())
@@ -61,13 +62,13 @@ public class AuthServiceImpl implements AuthService {
 
             return AuthenticationRes.builder()
                     .accessToken(accessToken)
-                    .accessTokenExpiration(this.accessJwtService.expiredAt(accessToken))
+                    .accessTokenExpiration(this.accessJwtService.getRemainingMinutes(accessToken))
                     .refreshToken(refreshToken)
-                    .refreshTokenExpiration(this.refreshJwtService.expiredAt(refreshToken))
+                    .refreshTokenExpiration(this.refreshJwtService.getRemainingMinutes(refreshToken))
                     .build();
         } catch (Exception e) {
             log.error("Error saving user: {}", e.getMessage());
-            throw new IllegalArgumentException("Error saving user: " + e.getMessage());
+            throw new RuntimeException("Error saving user: " + e.getMessage());
         }
     }
 
@@ -109,7 +110,7 @@ public class AuthServiceImpl implements AuthService {
             return roleEntities;
         } catch (Exception e) {
             log.error("Error saving roles: {}", e.getMessage());
-            throw new IllegalArgumentException("Error saving roles: " + e.getMessage());
+            throw new RuntimeException("Error saving roles: " + e.getMessage());
         }
     }
 
@@ -126,7 +127,7 @@ public class AuthServiceImpl implements AuthService {
             this.refreshTokenRepo.save(refreshTokenEntity);
         } catch (Exception e) {
             log.error("Error saving user token: {}", e.getMessage());
-            throw new IllegalArgumentException("Error saving user token: " + e.getMessage());
+            throw new RuntimeException("Error saving user token: " + e.getMessage());
         }
     }
 }
