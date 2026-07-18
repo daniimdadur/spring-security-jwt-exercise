@@ -19,3 +19,6 @@ app:
     refresh-secret: OIGzn/d0OfjdLL4PhTgHLrv0Wme/Jvc2ls+VQI4cloQ=
     access-expiration: 1
     refresh-expiration: 1440
+  cookie:
+    secure: false
+    max-age: 1440

@@ -1,6 +1,7 @@
 package com.guvaren.securityjwt.exception;
 
 import com.guvaren.securityjwt.base.ResponseError;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -53,6 +54,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateException.class)
     public ResponseEntity<ResponseError> handleDuplicateException(DuplicateException ex) {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<ResponseError> handleDataAccessException(DataAccessException ex) {
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMostSpecificCause().getMessage());
     }
 
     @ExceptionHandler(Exception.class)
