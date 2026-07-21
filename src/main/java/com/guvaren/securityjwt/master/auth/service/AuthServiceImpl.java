@@ -27,6 +27,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -43,6 +44,7 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
 
     @Override
+    @Transactional
     public AuthenticationRes register(RegistrationReq req) {
         this.userRepo.findByEmail(req.getEmail()).ifPresent(duplicate -> {
             throw new DuplicateException("Email already exists");
@@ -54,12 +56,15 @@ public class AuthServiceImpl implements AuthService {
                 .email(req.getEmail())
                 .password(passwordEncoder.encode(req.getPassword()))
                 .build();
-        Set<RoleEntity> roles = this.roleRepo.findByRoleIn(req.getRoles());
-        if (roles.isEmpty()) {
-            roles = saveRoles(req.getRoles());
-        }
+        RoleEntity userRole = this.roleRepo.findByRole(Roles.USER)
+                .orElseGet(() -> this.roleRepo.save(
+                        RoleEntity.builder()
+                                .id(CommonUtil.getUUID())
+                                .role(Roles.USER)
+                                .build()
+                ));
 
-        user.setRoles(roles);
+        user.setRoles(Set.of(userRole));
         try {
             return generateAuthenticationRes(this.userRepo.save(user));
         } catch (Exception e) {

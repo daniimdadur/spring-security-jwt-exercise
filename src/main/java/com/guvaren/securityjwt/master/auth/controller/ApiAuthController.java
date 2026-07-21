@@ -30,7 +30,7 @@ public class ApiAuthController {
     public ResponseEntity<Response<AuthenticationRes>> login(@RequestBody AuthenticationReq req, HttpServletResponse response) {
         AuthenticationRes res = this.authService.login(req);
         this.cookieUtil.addRefreshTokenCookie(response, res.getRefreshToken());
-        return ResponseEntity.ok(Response.created(res));
+        return ResponseEntity.ok(Response.success(res));
     }
 
     @PostMapping("/refresh-token")
