@@ -38,9 +38,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
-
+        String jwt = extractJwtFromRequest(request);
         try {
-            String jwt = extractJwtFromRequest(request);
             if (jwt == null) {
                 throw new JwtException("JWT cannot be null or empty");
             }
@@ -96,7 +95,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return null;
         }
-
         return authHeader.substring(7);
     }
 
