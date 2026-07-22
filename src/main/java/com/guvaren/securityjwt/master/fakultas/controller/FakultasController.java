@@ -19,14 +19,14 @@ public class FakultasController {
     private final FakultasService fakultasService;
 
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_USER', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_USER')")
     public ResponseEntity<Response<List<FakultasRes>>> get() {
         List<FakultasRes> result = this.fakultasService.get();
         return ResponseEntity.ok(Response.success(result));
     }
 
     @GetMapping(value = "/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_USER', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_USER')")
     public ResponseEntity<Response<Optional<FakultasRes>>> get(@PathVariable String id) {
         Optional<FakultasRes> result = this.fakultasService.getById(id);
         return ResponseEntity.ok(Response.success(result));

@@ -1,9 +1,12 @@
 package com.guvaren.securityjwt.master.auth.security;
 
+import com.guvaren.securityjwt.master.auth.enums.Roles;
 import com.guvaren.securityjwt.master.auth.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -34,10 +37,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(this.jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
-                        .accessDeniedHandler(jwtAccessDeniedHandler));
+                        .authenticationEntryPoint(this.jwtAuthenticationEntryPoint)
+                        .accessDeniedHandler(this.jwtAccessDeniedHandler));
         return http.build();
     }
 
@@ -56,5 +59,13 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public RoleHierarchy roleHierarchy() {
+        return RoleHierarchyImpl.withDefaultRolePrefix()
+                .role(Roles.SUPER_ADMIN.toString()).implies(Roles.ADMIN.toString())
+                .role(Roles.ADMIN.toString()).implies(Roles.USER.toString())
+                .build();
     }
 }

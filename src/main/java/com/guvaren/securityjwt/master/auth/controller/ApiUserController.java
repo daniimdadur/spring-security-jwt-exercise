@@ -18,7 +18,7 @@ public class ApiUserController {
     private final UserService userService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Response<Object>> get() {
         List<UserRes> result = this.userService.get();
         return ResponseEntity.ok(Response.success(result));

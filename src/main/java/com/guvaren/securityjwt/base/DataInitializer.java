@@ -37,7 +37,7 @@ public class DataInitializer implements CommandLineRunner {
                                 .role(Roles.ADMIN)
                                 .build()
                 ));
-        this.roleRepo.findByRole(Roles.USER)
+        RoleEntity userEntity = this.roleRepo.findByRole(Roles.USER)
                 .orElseGet(() -> this.roleRepo.save(
                         RoleEntity.builder()
                                 .id(CommonUtil.getUUID())
@@ -45,14 +45,38 @@ public class DataInitializer implements CommandLineRunner {
                                 .build()
                 ));
 
-        if (!this.userRepo.existsByEmail("dani@guvaren.com")) {
+        if (!this.userRepo.existsByEmail("superadmin@guvaren.com")) {
             UserEntity user = UserEntity.builder()
                     .id(CommonUtil.getUUID())
-                    .firstName("dani")
-                    .lastName("imdadur")
-                    .email("dani@guvaren.com")
-                    .password(this.passwordEncoder.encode("dani123"))
+                    .firstName("super")
+                    .lastName("admin")
+                    .email("superadmin@guvaren.com")
+                    .password(this.passwordEncoder.encode("superadmin"))
                     .roles(Set.of(superAdmin, admin))
+                    .build();
+            this.userRepo.save(user);
+        }
+
+        if (!this.userRepo.existsByEmail("admin@guvaren.com")) {
+            UserEntity user = UserEntity.builder()
+                    .id(CommonUtil.getUUID())
+                    .firstName("admin")
+                    .lastName("admin")
+                    .email("admin@guvaren.com")
+                    .password(this.passwordEncoder.encode("admin"))
+                    .roles(Set.of(admin))
+                    .build();
+            this.userRepo.save(user);
+        }
+
+        if (!this.userRepo.existsByEmail("user@guvaren.com")) {
+            UserEntity user = UserEntity.builder()
+                    .id(CommonUtil.getUUID())
+                    .firstName("user")
+                    .lastName("user")
+                    .email("user@guvaren.com")
+                    .password(this.passwordEncoder.encode("user"))
+                    .roles(Set.of(userEntity))
                     .build();
             this.userRepo.save(user);
         }
