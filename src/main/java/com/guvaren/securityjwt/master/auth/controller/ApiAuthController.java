@@ -40,8 +40,8 @@ public class ApiAuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Response<String>> logout() {
-        this.authService.logout();
+    public ResponseEntity<Response<String>> logout(@CookieValue(name = "refresh_token") String refreshToken) {
+        this.authService.logout(refreshToken);
         return ResponseEntity.ok(Response.success("Logout successful"));
     }
 }

@@ -124,10 +124,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void logout() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null) throw new JwtAuthenticationException("User is not authenticated");
-        String email = authentication.getName();
+    public void logout(String refreshToken) {
+        //this method used to logout user from all devices
+        String email = this.refreshJwtService.extractRefreshUsername(refreshToken);
         this.refreshTokenRepo.revokeAllUserTokens(email);
     }
 

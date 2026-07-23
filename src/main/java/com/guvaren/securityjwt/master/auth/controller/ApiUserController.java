@@ -19,7 +19,7 @@ public class ApiUserController {
 
     @GetMapping
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Response<Object>> get() {
+    public ResponseEntity<Response<List<UserRes>>> get() {
         List<UserRes> result = this.userService.get();
         return ResponseEntity.ok(Response.success(result));
     }

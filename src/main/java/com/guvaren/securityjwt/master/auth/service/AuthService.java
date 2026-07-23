@@ -9,5 +9,5 @@ public interface AuthService {
     AuthenticationRes register(RegistrationReq req);
     AuthenticationRes login(AuthenticationReq req);
     TokenRes getNewAccessToken(String refreshToken);
-    void logout();
+    void logout(String refreshToken);
 }

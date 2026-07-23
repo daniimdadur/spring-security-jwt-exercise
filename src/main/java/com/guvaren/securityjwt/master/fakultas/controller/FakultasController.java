@@ -19,35 +19,35 @@ public class FakultasController {
     private final FakultasService fakultasService;
 
     @GetMapping
-    @PreAuthorize("hasAuthority('ROLE_USER')")
+    @PreAuthorize("hasAuthority('fakultas:read')")
     public ResponseEntity<Response<List<FakultasRes>>> get() {
         List<FakultasRes> result = this.fakultasService.get();
         return ResponseEntity.ok(Response.success(result));
     }
 
     @GetMapping(value = "/{id}")
-    @PreAuthorize("hasAuthority('ROLE_USER')")
+    @PreAuthorize("hasAuthority('fakultas:read')")
     public ResponseEntity<Response<Optional<FakultasRes>>> get(@PathVariable String id) {
         Optional<FakultasRes> result = this.fakultasService.getById(id);
         return ResponseEntity.ok(Response.success(result));
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAuthority('fakultas:create')")
     public ResponseEntity<Response<Optional<FakultasRes>>> post(@RequestBody FakultasReq req) {
         Optional<FakultasRes> result = this.fakultasService.save(req);
         return ResponseEntity.ok(Response.created(result));
     }
 
     @PutMapping(value = "/{id}")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAuthority('fakultas:update')")
     public ResponseEntity<Response<Optional<FakultasRes>>> put(@PathVariable String id, @RequestBody FakultasReq req) {
         Optional<FakultasRes> result = this.fakultasService.update(req, id);
         return ResponseEntity.ok(Response.updated(result));
     }
 
     @DeleteMapping(value = "/{id}")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAuthority('fakultas:update')")
     public ResponseEntity<Response<Optional<FakultasRes>>> delete(@PathVariable String id) {
         Optional<FakultasRes> result = this.fakultasService.delete(id);
         return ResponseEntity.ok(Response.deleted(result));
