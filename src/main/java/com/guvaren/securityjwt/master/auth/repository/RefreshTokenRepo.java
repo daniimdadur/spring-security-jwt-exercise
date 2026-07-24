@@ -12,9 +12,7 @@ import java.util.Optional;
 
 public interface RefreshTokenRepo extends JpaRepository<RefreshTokenEntity, String> {
     Optional<RefreshTokenEntity> findByToken(String token);
-    List<RefreshTokenEntity> findAllByUserAndRevokedFalse(UserEntity user);
     @Modifying
-    @Query("update RefreshTokenEntity r set r.revoked = true, r.expired = true where r.user.email = :email")
+    @Query("update RefreshTokenEntity r set r.revoked = true where r.user.email = :email")
     void revokeAllUserTokens(@Param("email") String email);
-    boolean existsByToken(String token);
 }

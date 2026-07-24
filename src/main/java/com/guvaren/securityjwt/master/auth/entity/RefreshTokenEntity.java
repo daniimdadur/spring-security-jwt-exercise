@@ -4,6 +4,8 @@ import com.guvaren.securityjwt.master.auth.enums.TokenType;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -20,19 +22,11 @@ public class RefreshTokenEntity {
     @Column(name = "token", unique = true)
     public String token;
 
-    @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @Column(name = "token_type")
-    public TokenType tokenType = TokenType.BEARER;
+    @Column(name = "expired")
+    public LocalDateTime expired;
 
     @Column(name = "revoked")
     public boolean revoked;
-
-    @Column(name = "expired")
-    public boolean expired;
-
-    @Column(name = "user_id", insertable = false, updatable = false)
-    private String userId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")

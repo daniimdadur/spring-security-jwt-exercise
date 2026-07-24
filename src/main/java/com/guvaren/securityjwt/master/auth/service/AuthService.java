@@ -9,5 +9,6 @@ public interface AuthService {
     AuthenticationRes register(RegistrationReq req);
     AuthenticationRes login(AuthenticationReq req);
     TokenRes getNewAccessToken(String refreshToken);
-    void logout(String refreshToken);
+    String logoutAllDevices(String refreshToken);
+    String logoutThisDevice(String refreshToken);
 }

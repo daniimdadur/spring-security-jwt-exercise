@@ -11,8 +11,6 @@ import com.guvaren.securityjwt.master.auth.entity.RefreshTokenEntity;
 import com.guvaren.securityjwt.master.auth.entity.RoleEntity;
 import com.guvaren.securityjwt.master.auth.entity.UserEntity;
 import com.guvaren.securityjwt.master.auth.enums.Roles;
-import com.guvaren.securityjwt.master.auth.enums.TokenType;
-import com.guvaren.securityjwt.master.auth.repository.RefreshTokenRepo;
 import com.guvaren.securityjwt.master.auth.repository.RoleRepo;
 import com.guvaren.securityjwt.master.auth.repository.UserRepo;
 import com.guvaren.securityjwt.util.CommonUtil;
@@ -21,15 +19,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,9 +30,8 @@ import java.util.stream.Collectors;
 public class AuthServiceImpl implements AuthService {
     private final UserRepo userRepo;
     private final RoleRepo roleRepo;
-    private final RefreshTokenRepo refreshTokenRepo;
     private final AccessJwtService accessJwtService;
-    private final RefreshJwtService refreshJwtService;
+    private final RefreshTokenService refreshTokenService;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
 
@@ -92,27 +84,19 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public TokenRes getNewAccessToken(String refreshToken) {
-        RefreshTokenEntity refreshTokenEntity = this.refreshTokenRepo.findByToken(refreshToken)
-                .orElseThrow(() -> new JwtAuthenticationException("Refresh token not found"));
+        RefreshTokenEntity refreshTokenEntity = this.refreshTokenService.getRefreshToken(refreshToken);
 
         if (refreshTokenEntity.isRevoked()) {
             throw new JwtAuthenticationException("Refresh token has been revoked");
         }
 
-        if (refreshTokenEntity.isExpired()) {
-            throw new JwtAuthenticationException("Refresh token has expired");
-        }
-
-        if (!this.refreshJwtService.isRefreshTokenValid(refreshToken)) {
-            refreshTokenEntity.setExpired(true);
-            refreshTokenEntity.setRevoked(true);
-            this.refreshTokenRepo.save(refreshTokenEntity);
+        if (!this.refreshTokenService.isRefreshTokenValid(refreshToken)) {
+            this.refreshTokenService.revokeRefreshToken(refreshToken);
             throw new JwtAuthenticationException("Refresh token has expired or invalid");
         }
 
         try {
-            String username = this.refreshJwtService.extractRefreshUsername(refreshToken);
-            String accessToken = this.accessJwtService.generateAccessToken(username);
+            String accessToken = this.accessJwtService.generateAccessToken(refreshTokenEntity.getUser().getEmail());
             return TokenRes.builder()
                     .accessToken(accessToken)
                     .accessTokenExpiration(this.accessJwtService.getRemainingMinutes(accessToken))
@@ -124,66 +108,35 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void logout(String refreshToken) {
+    public String logoutAllDevices(String refreshToken) {
         //this method used to logout user from all devices
-        String email = this.refreshJwtService.extractRefreshUsername(refreshToken);
-        this.refreshTokenRepo.revokeAllUserTokens(email);
+//        String email = this.refreshTokenService.extractRefreshUsername(refreshToken);
+//        this.refreshTokenRepo.revokeAllUserTokens(email);
+        return "Logout successful from all devices";
+    }
+
+    @Override
+    @Transactional
+    public String logoutThisDevice(String refreshToken) {
+//        RefreshTokenEntity refreshTokenEntity = this.refreshTokenRepo.findByToken(this.tokenHashingService.hashToken(refreshToken))
+//                .orElse(null);
+//        if (refreshTokenEntity != null) {
+//            refreshTokenEntity.setRevoked(true);
+//            refreshTokenEntity.setExpired(true);
+//            this.refreshTokenRepo.save(refreshTokenEntity);
+//        }
+        return "Logout successful from this device";
     }
 
     private AuthenticationRes generateAuthenticationRes(UserEntity user){
         String accessToken = this.accessJwtService.generateAccessToken(user.getEmail());
-        String refreshToken = this.refreshJwtService.generateRefreshToken(user.getEmail());
-        saveUserToken(user, refreshToken);
+        String refreshToken = this.refreshTokenService.generateRefreshToken(user);
         return AuthenticationRes.builder()
                 .accessToken(accessToken)
                 .accessTokenExpiration(this.accessJwtService.getRemainingMinutes(accessToken))
                 .refreshToken(refreshToken)
-                .refreshTokenExpiration(this.refreshJwtService.getRemainingMinutes(refreshToken))
+                .refreshTokenExpiration(this.refreshTokenService.getRemainingMinutes(refreshToken))
                 .build();
 
-    }
-
-    private Set<RoleEntity> saveRoles(Set<Roles> roles) {
-        Set<RoleEntity> roleEntities = new HashSet<>();
-        if (roles == null || roles.isEmpty()) {
-            roleEntities.add(
-                    RoleEntity.builder()
-                            .id(CommonUtil.getUUID())
-                            .role(Roles.USER)
-                    .build()
-            );
-        } else {
-            roleEntities = roles.stream()
-                    .map(role -> RoleEntity.builder()
-                            .id(CommonUtil.getUUID())
-                            .role(role)
-                            .build())
-                    .collect(Collectors.toSet());
-        }
-
-        try {
-            this.roleRepo.saveAll(roleEntities);
-            return roleEntities;
-        } catch (Exception e) {
-            log.error("Error saving roles: {}", e.getMessage());
-            throw new RuntimeException("Error saving roles: " + e.getMessage());
-        }
-    }
-
-    private void saveUserToken(UserEntity user, String refreshToken) {
-        RefreshTokenEntity refreshTokenEntity = RefreshTokenEntity.builder()
-                .id(CommonUtil.getUUID())
-                .token(refreshToken)
-                .tokenType(TokenType.BEARER)
-                .revoked(false)
-                .expired(false)
-                .user(user)
-                .build();
-        try {
-            this.refreshTokenRepo.save(refreshTokenEntity);
-        } catch (Exception e) {
-            log.error("Error saving user token: {}", e.getMessage());
-            throw new RuntimeException("Error saving user token: " + e.getMessage());
-        }
     }
 }
