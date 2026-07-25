@@ -10,6 +10,5 @@ import lombok.*;
 public class AuthenticationRes {
     private String accessToken;
     private Long accessTokenExpiration;
-    private String refreshToken;
     private Long refreshTokenExpiration;
 }

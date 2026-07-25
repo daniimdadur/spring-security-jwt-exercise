@@ -10,10 +10,12 @@ import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -39,7 +41,7 @@ public class RefreshTokenService {
     public String generateRefreshToken(UserEntity user) {
         try {
             // Revoke all existing valid tokens for this user (token rotation)
-//            revokeAllUserTokens(user);
+            revokeAllUserTokens(user);
 
             String rawToken = UUID.randomUUID().toString();
             RefreshTokenEntity refreshTokenEntity = RefreshTokenEntity.builder()
@@ -121,15 +123,16 @@ public class RefreshTokenService {
      * Validate refresh token and return the token entity if valid
      */
     @Transactional
-    public Optional<RefreshTokenEntity> getValidRefreshToken(String rawToken) {
+    public RefreshTokenEntity getValidRefreshToken(String rawToken) {
         if (rawToken == null || rawToken.isBlank()) {
-            return Optional.empty();
+            throw new BadRequestException("Token cannot be null or empty");
         }
 
-        String hashedToken = tokenHashingService.hashToken(rawToken);
-        return refreshTokenRepo.findByToken(hashedToken)
+        String hashedToken = this.tokenHashingService.hashToken(rawToken);
+        return this.refreshTokenRepo.findByToken(hashedToken)
                 .filter(entity -> !entity.isRevoked())
-                .filter(entity -> entity.getExpired().isAfter(LocalDateTime.now()));
+                .filter(entity -> entity.getExpired().isAfter(LocalDateTime.now()))
+                .orElseThrow(() -> new JwtAuthenticationException("Invalid or expired refresh token"));
     }
 
     /**
@@ -174,41 +177,36 @@ public class RefreshTokenService {
         }
 
         String hashedToken = this.tokenHashingService.hashToken(rawToken);
-        refreshTokenRepo.findByToken(hashedToken).ifPresent(entity -> {
+        this.refreshTokenRepo.findByToken(hashedToken).ifPresent(entity -> {
             entity.setRevoked(true);
-            refreshTokenRepo.save(entity);
+            this.refreshTokenRepo.save(entity);
             log.debug("Revoked refresh token for user: {}", entity.getUser().getId());
         });
-    }
-
-    public RefreshTokenEntity getRefreshToken(String rawToken) {
-        return this.refreshTokenRepo.findByToken(this.tokenHashingService.hashToken(rawToken))
-                .orElseThrow(() -> new JwtAuthenticationException("Refresh token not found"));
     }
 
     /**
      * Revoke all tokens for a specific user
      */
-//    @Transactional
-//    public void revokeAllUserTokens(UserEntity user) {
-//        List<RefreshTokenEntity> validTokens = this.refreshTokenRepo.findAllByUserAndRevokedFalse(user);
-//        if (!validTokens.isEmpty()) {
-//            validTokens.forEach(token -> token.setRevoked(true));
-//            this.refreshTokenRepo.saveAll(validTokens);
-//            log.debug("Revoked {} tokens for user: {}", validTokens.size(), user.getId());
-//        }
-//    }
+    @Transactional
+    public void revokeAllUserTokens(UserEntity user) {
+        List<RefreshTokenEntity> validTokens = this.refreshTokenRepo.findAllByUserAndRevokedFalse(user);
+        if (!validTokens.isEmpty()) {
+            validTokens.forEach(token -> token.setRevoked(true));
+            this.refreshTokenRepo.saveAll(validTokens);
+            log.debug("Revoked {} tokens for user: {}", validTokens.size(), user.getId());
+        }
+    }
 
     /**
      * Clean up expired tokens (should be called periodically by a scheduler)
      */
-//    @Transactional
-//    @Scheduled(cron = "0 0 3 * * ?") // Run at 3 AM daily
-//    public void cleanUpExpiredTokens() {
-//        LocalDateTime now = LocalDateTime.now();
-//        int deletedCount = this.refreshTokenRepo.deleteByExpiredBefore(now);
-//        log.info("Cleaned up {} expired refresh tokens", deletedCount);
-//    }
+    @Transactional
+    @Scheduled(cron = "0 0 3 * * ?") // Run at 3 AM daily
+    public void cleanUpExpiredTokens() {
+        LocalDateTime now = LocalDateTime.now();
+        int deletedCount = this.refreshTokenRepo.deleteByExpiredBefore(now);
+        log.info("Cleaned up {} expired refresh tokens", deletedCount);
+    }
 
     /**
      * Rotate refresh token - revoke old one and generate new one

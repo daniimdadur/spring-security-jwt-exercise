@@ -8,6 +8,7 @@ import com.guvaren.securityjwt.master.auth.dto.res.TokenRes;
 public interface AuthService {
     AuthenticationRes register(RegistrationReq req);
     AuthenticationRes login(AuthenticationReq req);
+    AuthenticationRes loginAndLogoutForAllDevices(AuthenticationReq req);
     TokenRes getNewAccessToken(String refreshToken);
     String logoutAllDevices(String refreshToken);
     String logoutThisDevice(String refreshToken);

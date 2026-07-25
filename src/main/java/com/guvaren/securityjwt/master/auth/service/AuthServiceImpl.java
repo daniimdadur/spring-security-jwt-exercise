@@ -57,84 +57,79 @@ public class AuthServiceImpl implements AuthService {
                 ));
 
         user.setRoles(Set.of(userRole));
-        try {
-            return generateAuthenticationRes(this.userRepo.save(user));
-        } catch (Exception e) {
-            throw new RuntimeException("error registering user: " + e.getMessage());
-        }
+        return generateAuthenticationRes(this.userRepo.save(user));
     }
 
     @Override
     public AuthenticationRes login(AuthenticationReq req) {
-        try {
-            this.authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            req.getEmail(),
-                            req.getPassword()
-                    )
-            );
+        this.authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        req.getEmail(),
+                        req.getPassword()
+                )
+        );
 
-            UserEntity user = this.userRepo.findByEmail(req.getEmail())
-                    .orElseThrow(() -> new NotFoundException("User not found with email: " + req.getEmail()));
-            return generateAuthenticationRes(user);
-        } catch (Exception e) {
-            throw new RuntimeException("error occurred while logging in: " + e.getMessage());
-        }
+        UserEntity user = this.userRepo.findByEmail(req.getEmail())
+                .orElseThrow(() -> new NotFoundException("User not found with email: " + req.getEmail()));
+        return generateAuthenticationRes(user);
+    }
+
+    @Override
+    public AuthenticationRes loginAndLogoutForAllDevices(AuthenticationReq req) {
+        this.authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        req.getEmail(),
+                        req.getPassword()
+                )
+        );
+
+        UserEntity user = this.userRepo.findByEmail(req.getEmail())
+                .orElseThrow(() -> new NotFoundException("User not found with email: " + req.getEmail()));
+        return generateAuthenticationAndLogoutRes(user);
     }
 
     @Override
     public TokenRes getNewAccessToken(String refreshToken) {
-        RefreshTokenEntity refreshTokenEntity = this.refreshTokenService.getRefreshToken(refreshToken);
-
-        if (refreshTokenEntity.isRevoked()) {
-            throw new JwtAuthenticationException("Refresh token has been revoked");
-        }
-
-        if (!this.refreshTokenService.isRefreshTokenValid(refreshToken)) {
-            this.refreshTokenService.revokeRefreshToken(refreshToken);
-            throw new JwtAuthenticationException("Refresh token has expired or invalid");
-        }
-
-        try {
-            String accessToken = this.accessJwtService.generateAccessToken(refreshTokenEntity.getUser().getEmail());
-            return TokenRes.builder()
-                    .accessToken(accessToken)
-                    .accessTokenExpiration(this.accessJwtService.getRemainingMinutes(accessToken))
-                    .build();
-        } catch (Exception e) {
-            throw new RuntimeException("Error generating new access token: " + e.getMessage());
-        }
+        RefreshTokenEntity refreshTokenEntity = this.refreshTokenService.getValidRefreshToken(refreshToken);
+        String accessToken = this.accessJwtService.generateAccessToken(refreshTokenEntity.getUser().getEmail());
+        return TokenRes.builder()
+                .accessToken(accessToken)
+                .accessTokenExpiration(this.accessJwtService.getRemainingMinutes(accessToken))
+                .build();
     }
 
     @Override
     @Transactional
     public String logoutAllDevices(String refreshToken) {
-        //this method used to logout user from all devices
-//        String email = this.refreshTokenService.extractRefreshUsername(refreshToken);
-//        this.refreshTokenRepo.revokeAllUserTokens(email);
+        RefreshTokenEntity refreshTokenEntity = this.refreshTokenService.getValidRefreshToken(refreshToken);
+        this.refreshTokenService.revokeAllUserTokens(refreshTokenEntity.getUser());
         return "Logout successful from all devices";
     }
 
     @Override
     @Transactional
     public String logoutThisDevice(String refreshToken) {
-//        RefreshTokenEntity refreshTokenEntity = this.refreshTokenRepo.findByToken(this.tokenHashingService.hashToken(refreshToken))
-//                .orElse(null);
-//        if (refreshTokenEntity != null) {
-//            refreshTokenEntity.setRevoked(true);
-//            refreshTokenEntity.setExpired(true);
-//            this.refreshTokenRepo.save(refreshTokenEntity);
-//        }
+        this.refreshTokenService.revokeRefreshToken(refreshToken);
         return "Logout successful from this device";
     }
 
     private AuthenticationRes generateAuthenticationRes(UserEntity user){
         String accessToken = this.accessJwtService.generateAccessToken(user.getEmail());
+        String refreshToken = this.refreshTokenService.generateAdditionalRefreshToken(user);
+        return AuthenticationRes.builder()
+                .accessToken(accessToken)
+                .accessTokenExpiration(this.accessJwtService.getRemainingMinutes(accessToken))
+                .refreshTokenExpiration(this.refreshTokenService.getRemainingMinutes(refreshToken))
+                .build();
+
+    }
+
+    private AuthenticationRes generateAuthenticationAndLogoutRes(UserEntity user){
+        String accessToken = this.accessJwtService.generateAccessToken(user.getEmail());
         String refreshToken = this.refreshTokenService.generateRefreshToken(user);
         return AuthenticationRes.builder()
                 .accessToken(accessToken)
                 .accessTokenExpiration(this.accessJwtService.getRemainingMinutes(accessToken))
-                .refreshToken(refreshToken)
                 .refreshTokenExpiration(this.refreshTokenService.getRemainingMinutes(refreshToken))
                 .build();
 
