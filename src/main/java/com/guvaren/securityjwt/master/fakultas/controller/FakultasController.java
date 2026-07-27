@@ -47,7 +47,7 @@ public class FakultasController {
     }
 
     @DeleteMapping(value = "/{id}")
-    @PreAuthorize("hasAuthority('fakultas:update')")
+    @PreAuthorize("hasAuthority('fakultas:delete')")
     public ResponseEntity<Response<Optional<FakultasRes>>> delete(@PathVariable String id) {
         Optional<FakultasRes> result = this.fakultasService.delete(id);
         return ResponseEntity.ok(Response.deleted(result));

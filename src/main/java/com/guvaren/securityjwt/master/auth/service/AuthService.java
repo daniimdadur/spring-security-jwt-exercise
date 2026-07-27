@@ -2,13 +2,13 @@ package com.guvaren.securityjwt.master.auth.service;
 
 import com.guvaren.securityjwt.master.auth.dto.req.AuthenticationReq;
 import com.guvaren.securityjwt.master.auth.dto.req.RegistrationReq;
-import com.guvaren.securityjwt.master.auth.dto.res.AuthenticationRes;
+import com.guvaren.securityjwt.master.auth.dto.res.AuthenticationResult;
 import com.guvaren.securityjwt.master.auth.dto.res.TokenRes;
 
 public interface AuthService {
-    AuthenticationRes register(RegistrationReq req);
-    AuthenticationRes login(AuthenticationReq req);
-    AuthenticationRes loginAndLogoutForAllDevices(AuthenticationReq req);
+    AuthenticationResult register(RegistrationReq req);
+    AuthenticationResult login(AuthenticationReq req);
+    AuthenticationResult loginAndLogoutForAllDevices(AuthenticationReq req);
     TokenRes getNewAccessToken(String refreshToken);
     String logoutAllDevices(String refreshToken);
     String logoutThisDevice(String refreshToken);

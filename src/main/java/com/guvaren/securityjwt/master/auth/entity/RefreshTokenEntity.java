@@ -17,18 +17,18 @@ public class RefreshTokenEntity {
 
     @Id
     @Column(name = "tid", length = 36)
-    public String id;
+    private String id;
 
     @Column(name = "token", unique = true)
-    public String token;
+    private String token;
 
     @Column(name = "expired")
-    public LocalDateTime expired;
+    private LocalDateTime expired;
 
     @Column(name = "revoked")
-    public boolean revoked;
+    private boolean revoked;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    public UserEntity user;
+    private UserEntity user;
 }

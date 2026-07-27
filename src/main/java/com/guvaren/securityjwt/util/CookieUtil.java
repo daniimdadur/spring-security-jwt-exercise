@@ -1,8 +1,9 @@
 package com.guvaren.securityjwt.util;
 
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -14,12 +15,26 @@ public class CookieUtil {
     private int maxAge;
 
     public void addRefreshTokenCookie(HttpServletResponse response, String token) {
-        Cookie cookie = new Cookie("refresh_token", token);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(this.secure);
-        cookie.setPath("/");
-        cookie.setMaxAge(this.maxAge);
-        //cookie.setAttribute("SameSite", "Strict");
-        response.addCookie(cookie);
+        ResponseCookie cookie = ResponseCookie.from("refresh_token", token)
+                .httpOnly(true)
+                .secure(this.secure)
+                .path("/")
+                .maxAge(this.maxAge)
+                .sameSite("Strict") // Sangat direkomendasikan untuk mencegah CSRF
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    }
+
+    public void deleteRefreshTokenCookie(HttpServletResponse response) {
+        ResponseCookie cookie = ResponseCookie.from("refresh_token", "")
+                .httpOnly(true)
+                .secure(this.secure)
+                .path("/")
+                .maxAge(0)
+                .sameSite("Strict")
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 }

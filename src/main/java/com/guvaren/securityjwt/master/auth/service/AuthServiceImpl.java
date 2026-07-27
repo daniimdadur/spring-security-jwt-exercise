@@ -1,11 +1,10 @@
 package com.guvaren.securityjwt.master.auth.service;
 
 import com.guvaren.securityjwt.exception.DuplicateException;
-import com.guvaren.securityjwt.exception.JwtAuthenticationException;
 import com.guvaren.securityjwt.exception.NotFoundException;
 import com.guvaren.securityjwt.master.auth.dto.req.AuthenticationReq;
 import com.guvaren.securityjwt.master.auth.dto.req.RegistrationReq;
-import com.guvaren.securityjwt.master.auth.dto.res.AuthenticationRes;
+import com.guvaren.securityjwt.master.auth.dto.res.AuthenticationResult;
 import com.guvaren.securityjwt.master.auth.dto.res.TokenRes;
 import com.guvaren.securityjwt.master.auth.entity.RefreshTokenEntity;
 import com.guvaren.securityjwt.master.auth.entity.RoleEntity;
@@ -37,7 +36,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public AuthenticationRes register(RegistrationReq req) {
+    public AuthenticationResult register(RegistrationReq req) {
         this.userRepo.findByEmail(req.getEmail()).ifPresent(duplicate -> {
             throw new DuplicateException("Email already exists");
         });
@@ -61,7 +60,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthenticationRes login(AuthenticationReq req) {
+    public AuthenticationResult login(AuthenticationReq req) {
         this.authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         req.getEmail(),
@@ -75,7 +74,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthenticationRes loginAndLogoutForAllDevices(AuthenticationReq req) {
+    public AuthenticationResult loginAndLogoutForAllDevices(AuthenticationReq req) {
         this.authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         req.getEmail(),
@@ -113,23 +112,25 @@ public class AuthServiceImpl implements AuthService {
         return "Logout successful from this device";
     }
 
-    private AuthenticationRes generateAuthenticationRes(UserEntity user){
+    private AuthenticationResult generateAuthenticationRes(UserEntity user){
         String accessToken = this.accessJwtService.generateAccessToken(user.getEmail());
         String refreshToken = this.refreshTokenService.generateAdditionalRefreshToken(user);
-        return AuthenticationRes.builder()
+        return AuthenticationResult.builder()
                 .accessToken(accessToken)
                 .accessTokenExpiration(this.accessJwtService.getRemainingMinutes(accessToken))
+                .refreshToken(refreshToken)
                 .refreshTokenExpiration(this.refreshTokenService.getRemainingMinutes(refreshToken))
                 .build();
 
     }
 
-    private AuthenticationRes generateAuthenticationAndLogoutRes(UserEntity user){
+    private AuthenticationResult generateAuthenticationAndLogoutRes(UserEntity user){
         String accessToken = this.accessJwtService.generateAccessToken(user.getEmail());
         String refreshToken = this.refreshTokenService.generateRefreshToken(user);
-        return AuthenticationRes.builder()
+        return AuthenticationResult.builder()
                 .accessToken(accessToken)
                 .accessTokenExpiration(this.accessJwtService.getRemainingMinutes(accessToken))
+                .refreshToken(refreshToken)
                 .refreshTokenExpiration(this.refreshTokenService.getRemainingMinutes(refreshToken))
                 .build();
 
