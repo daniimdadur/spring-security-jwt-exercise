@@ -1,21 +1,31 @@
 package com.guvaren.securityjwt.master.fakultas.service;
 
+import com.guvaren.securityjwt.exception.NotFoundException;
 import com.guvaren.securityjwt.master.fakultas.model.FakultasEntity;
 import com.guvaren.securityjwt.master.fakultas.model.FakultasReq;
 import com.guvaren.securityjwt.master.fakultas.model.FakultasRes;
 import com.guvaren.securityjwt.master.fakultas.repo.FakultasRepo;
+import com.guvaren.securityjwt.util.CommonUtil;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class FakultasServiceImpl implements FakultasService{
+@Slf4j
+public class FakultasServiceImpl implements FakultasService {
     private final FakultasRepo fakultasRepo;
 
     @Override
@@ -28,24 +38,56 @@ public class FakultasServiceImpl implements FakultasService{
         return result.stream().map(this::convertEntityToRes).collect(Collectors.toList());
     }
 
-    @Override
-    public Optional<FakultasRes> getById(String id) {
-        return Optional.empty();
+    public Page<FakultasRes> get(Pageable pageable) {
+        Page<FakultasEntity> result = this.fakultasRepo.findAll(pageable);
+        return result.map(this::convertEntityToRes);
     }
 
     @Override
-    public Optional<FakultasRes> save(FakultasReq request) {
-        return Optional.empty();
+    public FakultasRes getById(String id) {
+        FakultasEntity entity = this.fakultasRepo.findById(id)
+                .orElseThrow(() -> new NotFoundException("Fakultas not found with id: " + id));
+        return convertEntityToRes(entity);
     }
 
     @Override
-    public Optional<FakultasRes> update(FakultasReq request, String id) {
-        return Optional.empty();
+    public FakultasRes save(FakultasReq request) {
+        FakultasEntity entity = new FakultasEntity();
+        entity.setId(CommonUtil.getUUID());
+        entity.setCode(request.getCode());
+        entity.setName(request.getName());
+        FakultasEntity saved = this.fakultasRepo.save(entity);
+        return convertEntityToRes(saved);
     }
 
     @Override
-    public Optional<FakultasRes> delete(String id) {
-        return Optional.empty();
+    public FakultasRes update(FakultasReq request, String id) {
+        FakultasEntity entity = this.fakultasRepo.findById(id)
+                .orElseThrow(() -> new NotFoundException("Fakultas not found with id: " + id));
+        entity.setCode(request.getCode());
+        entity.setName(request.getName());
+        FakultasEntity updated = this.fakultasRepo.save(entity);
+        return convertEntityToRes(updated);
+    }
+
+    @Override
+    @Transactional
+    public FakultasRes delete(String id) {
+        FakultasEntity entity = this.fakultasRepo.findById(id)
+                .orElseThrow(() -> new NotFoundException("Fakultas not found with id: " + id));
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null) {
+            entity.setDeletedBy(auth.getName());
+            entity.setDeletedAt(LocalDateTime.now());
+        }
+        return convertEntityToRes(entity);
+    }
+
+    //@Scheduled(cron = "0 0 0 * * *") deleted at 12 pm everyday
+    @Scheduled(fixedRate = 60000)
+    public void cleanUp() {
+        int count = this.fakultasRepo.deleteByDeletedAtIsNotNull();
+        log.info("Deleted {} fakultas", count);
     }
 
     private FakultasRes convertEntityToRes(FakultasEntity entity) {

@@ -82,17 +82,6 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void handlePaymentServiceException_shouldReturn402() {
-        PaymentServiceException ex = new PaymentServiceException("Payment failed");
-        ResponseEntity<ResponseError> response = exceptionHandler.handlePaymentServiceException(ex);
-
-        assertEquals(HttpStatus.PAYMENT_REQUIRED, response.getStatusCode());
-        assertEquals(402, response.getBody().status());
-        assertEquals("Payment Required", response.getBody().message());
-        assertEquals("Payment failed", response.getBody().error());
-    }
-
-    @Test
     void handleDataAccessException_shouldReturn500() {
         DataAccessException ex = mock(DataAccessException.class);
         when(ex.getMostSpecificCause()).thenReturn(new RuntimeException("DB connection failed"));

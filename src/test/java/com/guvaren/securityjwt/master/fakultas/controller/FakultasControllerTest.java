@@ -8,12 +8,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -28,18 +30,19 @@ class FakultasControllerTest {
     private FakultasController fakultasController;
 
     @Test
-    void get_shouldReturnListOfFakultas() {
+    void get_shouldReturnPageOfFakultas() {
         FakultasRes fakultasRes = new FakultasRes();
         fakultasRes.setId("f1");
         fakultasRes.setCode("FTI");
         fakultasRes.setName("Fakultas Teknologi Informasi");
 
-        when(fakultasService.get()).thenReturn(List.of(fakultasRes));
+        Page<FakultasRes> page = new PageImpl<>(List.of(fakultasRes), PageRequest.of(0, 20), 1);
+        when(fakultasService.get(any(Pageable.class))).thenReturn(page);
 
-        ResponseEntity result = fakultasController.get();
+        ResponseEntity result = fakultasController.get(PageRequest.of(0, 20));
 
         assertEquals(HttpStatus.OK, result.getStatusCode());
-        verify(fakultasService).get();
+        verify(fakultasService).get(any(Pageable.class));
     }
 
     @Test
@@ -49,7 +52,7 @@ class FakultasControllerTest {
         fakultasRes.setCode("FTI");
         fakultasRes.setName("Fakultas Teknologi Informasi");
 
-        when(fakultasService.getById("f1")).thenReturn(Optional.of(fakultasRes));
+        when(fakultasService.getById("f1")).thenReturn(fakultasRes);
 
         ResponseEntity result = fakultasController.get("f1");
 
@@ -63,7 +66,12 @@ class FakultasControllerTest {
         req.setCode("FK");
         req.setName("Fakultas Kedokteran");
 
-        when(fakultasService.save(req)).thenReturn(Optional.empty());
+        FakultasRes fakultasRes = new FakultasRes();
+        fakultasRes.setId("f2");
+        fakultasRes.setCode("FK");
+        fakultasRes.setName("Fakultas Kedokteran");
+
+        when(fakultasService.save(req)).thenReturn(fakultasRes);
 
         ResponseEntity result = fakultasController.post(req);
 
@@ -77,7 +85,12 @@ class FakultasControllerTest {
         req.setCode("FTI-NEW");
         req.setName("Fakultas Teknologi Informasi Updated");
 
-        when(fakultasService.update(req, "f1")).thenReturn(Optional.empty());
+        FakultasRes fakultasRes = new FakultasRes();
+        fakultasRes.setId("f1");
+        fakultasRes.setCode("FTI-NEW");
+        fakultasRes.setName("Fakultas Teknologi Informasi Updated");
+
+        when(fakultasService.update(req, "f1")).thenReturn(fakultasRes);
 
         ResponseEntity result = fakultasController.put("f1", req);
 
@@ -87,7 +100,12 @@ class FakultasControllerTest {
 
     @Test
     void delete_shouldReturnDeleted() {
-        when(fakultasService.delete("f1")).thenReturn(Optional.empty());
+        FakultasRes fakultasRes = new FakultasRes();
+        fakultasRes.setId("f1");
+        fakultasRes.setCode("FTI");
+        fakultasRes.setName("Fakultas Teknologi Informasi");
+
+        when(fakultasService.delete("f1")).thenReturn(fakultasRes);
 
         ResponseEntity result = fakultasController.delete("f1");
 

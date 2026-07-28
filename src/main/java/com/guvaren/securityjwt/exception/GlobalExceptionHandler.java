@@ -41,11 +41,6 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
-    @ExceptionHandler(PaymentServiceException.class)
-    public ResponseEntity<ResponseError> handlePaymentServiceException(PaymentServiceException ex) {
-        return buildResponse(HttpStatus.PAYMENT_REQUIRED, ex.getMessage());
-    }
-
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ResponseError> handleAccessDeniedException(AccessDeniedException ex) {
         return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage());

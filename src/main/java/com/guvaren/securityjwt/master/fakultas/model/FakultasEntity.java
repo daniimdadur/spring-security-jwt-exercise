@@ -16,7 +16,7 @@ import org.hibernate.annotations.SQLDelete;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@SQLDelete(sql = "UPDATE t_fakultas SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
+//@SQLDelete(sql = "UPDATE t_fakultas SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
 @Table(name = "t_fakultas")
 public class FakultasEntity extends BaseAuditableSoftDelete {
     @Id

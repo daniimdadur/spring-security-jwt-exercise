@@ -1,16 +1,18 @@
 package com.guvaren.securityjwt.master.fakultas.controller;
 
+import com.guvaren.securityjwt.base.PageResponse;
 import com.guvaren.securityjwt.base.Response;
 import com.guvaren.securityjwt.master.fakultas.model.FakultasReq;
 import com.guvaren.securityjwt.master.fakultas.model.FakultasRes;
 import com.guvaren.securityjwt.master.fakultas.service.FakultasService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
@@ -20,36 +22,42 @@ public class FakultasController {
 
     @GetMapping
     @PreAuthorize("hasAuthority('fakultas:read')")
-    public ResponseEntity<Response<List<FakultasRes>>> get() {
-        List<FakultasRes> result = this.fakultasService.get();
-        return ResponseEntity.ok(Response.success(result));
+    public ResponseEntity<Response<PageResponse<FakultasRes>>> get(
+            @PageableDefault(
+                    page = 0,
+                    size = 20,
+                    sort = "createdAt",
+                    direction = Sort.Direction.ASC
+            ) Pageable pageable) {
+        Page<FakultasRes> result = this.fakultasService.get(pageable);
+        return ResponseEntity.ok(Response.successPage(result));
     }
 
     @GetMapping(value = "/{id}")
     @PreAuthorize("hasAuthority('fakultas:read')")
-    public ResponseEntity<Response<Optional<FakultasRes>>> get(@PathVariable String id) {
-        Optional<FakultasRes> result = this.fakultasService.getById(id);
+    public ResponseEntity<Response<FakultasRes>> get(@PathVariable String id) {
+        FakultasRes result = this.fakultasService.getById(id);
         return ResponseEntity.ok(Response.success(result));
     }
 
     @PostMapping
     @PreAuthorize("hasAuthority('fakultas:create')")
-    public ResponseEntity<Response<Optional<FakultasRes>>> post(@RequestBody FakultasReq req) {
-        Optional<FakultasRes> result = this.fakultasService.save(req);
+    public ResponseEntity<Response<FakultasRes>> post(@RequestBody FakultasReq req) {
+        FakultasRes result = this.fakultasService.save(req);
         return ResponseEntity.ok(Response.created(result));
     }
 
     @PutMapping(value = "/{id}")
     @PreAuthorize("hasAuthority('fakultas:update')")
-    public ResponseEntity<Response<Optional<FakultasRes>>> put(@PathVariable String id, @RequestBody FakultasReq req) {
-        Optional<FakultasRes> result = this.fakultasService.update(req, id);
+    public ResponseEntity<Response<FakultasRes>> put(@PathVariable String id, @RequestBody FakultasReq req) {
+        FakultasRes result = this.fakultasService.update(req, id);
         return ResponseEntity.ok(Response.updated(result));
     }
 
     @DeleteMapping(value = "/{id}")
     @PreAuthorize("hasAuthority('fakultas:delete')")
-    public ResponseEntity<Response<Optional<FakultasRes>>> delete(@PathVariable String id) {
-        Optional<FakultasRes> result = this.fakultasService.delete(id);
+    public ResponseEntity<Response<FakultasRes>> delete(@PathVariable String id) {
+        FakultasRes result = this.fakultasService.delete(id);
         return ResponseEntity.ok(Response.deleted(result));
     }
 }

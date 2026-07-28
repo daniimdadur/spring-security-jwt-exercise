@@ -1,7 +1,9 @@
 package com.guvaren.securityjwt.master.auth.entity;
 
+import com.guvaren.securityjwt.base.BaseAuditableSoftDelete;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -13,7 +15,7 @@ import java.util.Set;
 @Builder
 @Entity
 @Table(name = "t_user")
-public class UserEntity {
+public class UserEntity extends BaseAuditableSoftDelete {
 
     @Id
     @Column(name = "uid", length = 36)

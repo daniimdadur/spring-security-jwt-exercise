@@ -9,6 +9,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -28,7 +31,7 @@ class ApiUserControllerTest {
     private ApiUserController apiUserController;
 
     @Test
-    void get_shouldReturnListOfUsers() {
+    void get_shouldReturnPageOfUsers() {
         UserRes userRes = UserRes.builder()
                 .id("u1")
                 .firstName("Test")
@@ -37,12 +40,13 @@ class ApiUserControllerTest {
                 .roles(Set.of(Roles.USER))
                 .build();
 
-        when(userService.get()).thenReturn(List.of(userRes));
+        Page<UserRes> page = new PageImpl<>(List.of(userRes), PageRequest.of(0, 20), 1);
+        when(userService.get(any())).thenReturn(page);
 
-        ResponseEntity result = apiUserController.get();
+        ResponseEntity result = apiUserController.get(PageRequest.of(0, 20));
 
         assertEquals(HttpStatus.OK, result.getStatusCode());
-        verify(userService).get();
+        verify(userService).get(any());
     }
 
     @Test

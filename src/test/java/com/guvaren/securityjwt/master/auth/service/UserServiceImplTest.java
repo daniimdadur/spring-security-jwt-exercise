@@ -15,6 +15,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.*;
 
@@ -82,6 +85,18 @@ class UserServiceImplTest {
         List<UserRes> result = userService.get();
 
         assertTrue(result.get(0).getRoles().contains(Roles.USER));
+    }
+
+    @Test
+    void get_withPageable_shouldReturnPage() {
+        Page<UserEntity> page = new PageImpl<>(List.of(testUser), PageRequest.of(0, 20), 1);
+        when(userRepo.findAll(any(PageRequest.class))).thenReturn(page);
+
+        Page<UserRes> result = userService.get(PageRequest.of(0, 20));
+
+        assertEquals(1, result.getContent().size());
+        assertEquals("test@email.com", result.getContent().get(0).getEmail());
+        assertEquals(1, result.getTotalElements());
     }
 
     @Test

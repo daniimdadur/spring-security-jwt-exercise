@@ -10,6 +10,8 @@ import com.guvaren.securityjwt.master.auth.repository.RoleRepo;
 import com.guvaren.securityjwt.master.auth.repository.UserRepo;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,13 +27,13 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<UserRes> get() {
         List<UserEntity> users = this.userRepo.findAll();
-        return users.stream().map(user -> UserRes.builder()
-                .id(user.getId())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .email(user.getEmail())
-                .roles(user.getRoles().stream().map(RoleEntity::getRole).collect(Collectors.toSet()))
-                .build()).collect(Collectors.toList());
+        return users.stream().map(this::convertToUserRes).collect(Collectors.toList());
+    }
+
+    @Override
+    public Page<UserRes> get(Pageable pageable) {
+        Page<UserEntity> users = this.userRepo.findAll(pageable);
+        return users.map(this::convertToUserRes);
     }
 
     @Override
@@ -50,5 +52,15 @@ public class UserServiceImpl implements UserService {
             user.getRoles().addAll(roles);
         }
         return "User roles updated successfully";
+    }
+
+    private UserRes convertToUserRes(UserEntity user) {
+        return UserRes.builder()
+                .id(user.getId())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .email(user.getEmail())
+                .roles(user.getRoles().stream().map(RoleEntity::getRole).collect(Collectors.toSet()))
+                .build();
     }
 }

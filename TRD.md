@@ -499,7 +499,7 @@ SUPER_ADMIN → ADMIN → USER
 | Transmission Security        | HTTP-only cookies, SameSite=Strict                 |
 | Stateless Sessions           | No server-side session storage                     |
 | CSRF Protection              | Disabled (API-only, token-based auth)              |
-| Secret Key Management        | Base64 encoded in configuration (externalize in prod) |
+| Secret Key Management        | Externalized via environment variables (`JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`) |
 
 ### 9.3 Reliability
 
@@ -547,18 +547,20 @@ SUPER_ADMIN → ADMIN → USER
 
 ## 11. Known Issues & Technical Debt
 
-| #  | Issue                                                                 | Severity |
-|----|-----------------------------------------------------------------------|----------|
-| 1  | JWT secrets hardcoded di `application.yaml`                           | High     |
-| 2  | Hibernate DDL mode = `create` (drop & recreate on restart)            | High     |
-| 3  | `FakultasServiceImpl`: `getById()`, `save()`, `update()`, `delete()` masih stub | Medium |
-| 4  | `FakultasController` DELETE menggunakan `fakultas:update` permission (seharusnya `fakultas:delete`) | Medium |
-| 5  | Response DTO untuk Fakultas GET by ID menggunakan `Optional<>` wrapper yang tidak ideal | Low |
-| 6  | Tidak ada rate limiting pada endpoint autentikasi                     | Medium |
-| 7  | Tidak ada input sanitization/pagination pada list endpoints           | Low      |
-| 8  | `RefreshTokenEntity` menggunakan public fields daripada private       | Low      |
-| 9  | Tidak ada HTTPS enforcement pada konfigurasi cookie                   | Medium   |
-| 10 | `PaymentServiceException` didefinisikan tetapi tidak digunakan dalam bisnis flow | Low |
+| #  | Issue                                                                 | Severity | Status |
+|----|-----------------------------------------------------------------------|----------|--------|
+| 1  | JWT secrets hardcoded di `application.yaml`                           | High     | **Resolved** - Externalized via `${JWT_ACCESS_SECRET}` / `${JWT_REFRESH_SECRET}` env vars |
+| 2  | Hibernate DDL mode = `create` (drop & recreate on restart)            | High     | **Resolved** - Changed to `ddl-auto: update` |
+| 3  | `FakultasServiceImpl`: `getById()`, `save()`, `update()`, `delete()` masih stub | Medium | **Resolved** - Full CRUD implementation with NotFoundException |
+| 4  | `FakultasController` DELETE menggunakan `fakultas:update` permission (seharusnya `fakultas:delete`) | Medium | **Resolved** - Already correct (`fakultas:delete`) |
+| 5  | Response DTO untuk Fakultas GET by ID menggunakan `Optional<>` wrapper yang tidak ideal | Low | **Resolved** - Removed Optional wrappers from service and controller |
+| 6  | Tidak ada rate limiting pada endpoint autentikasi                     | Medium | **Resolved** - Added `RateLimitFilter` (30 req/min sliding window) on `/api/v1/auth/**` |
+| 7  | Tidak ada input sanitization/pagination pada list endpoints           | Low      | **Resolved** - Added `Pageable` with `@PageableDefault(size = 20)` on all list endpoints |
+| 8  | `RefreshTokenEntity` menggunakan public fields daripada private       | Low      | **Resolved** - Fields already private with Lombok `@Getter/@Setter` |
+| 9  | Tidak ada HTTPS enforcement pada konfigurasi cookie                   | Medium   | **Resolved** - `cookie.secure` defaults to `true` via `${COOKIE_SECURE:true}` env var |
+| 10 | `PaymentServiceException` didefinisikan tetapi tidak digunakan dalam bisnis flow | Low | **Resolved** - Removed class and its GlobalExceptionHandler method |
+
+**Last resolved: 2026-07-27**
 
 ---
 
@@ -606,7 +608,7 @@ spring:
     password: verysecret
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
@@ -614,12 +616,12 @@ spring:
           time_zone: Asia/Jakarta
 app:
   jwt:
-    access-secret: <Base64 encoded HMAC-SHA256 key>
-    refresh-secret: <Base64 encoded HMAC-SHA256 key>
+    access-secret: ${JWT_ACCESS_SECRET:default-access-secret-change-in-prod}
+    refresh-secret: ${JWT_REFRESH_SECRET:default-refresh-secret-change-in-prod}
     access-expiration: 15
     refresh-expiration: 1440
   cookie:
-    secure: false
+    secure: ${COOKIE_SECURE:true}
     max-age: 1440
 ```
 
@@ -662,6 +664,8 @@ services:
 | `ApiAuthControllerTest`     | Auth REST endpoints    | Unit   |
 | `ApiUserControllerTest`     | User REST endpoints    | Unit   |
 | `FakultasControllerTest`    | Fakultas REST endpoints| Unit   |
+| `RolesTest`                 | Role enum validation   | Unit   |
+| `PermissionsTest`           | Permissions enum       | Unit   |
 
 ### 14.2 Testing Tools
 
@@ -673,4 +677,5 @@ services:
 ---
 
 *Document generated on: 2026-07-27*
-*Version: 1.0*
+*Version: 1.1*
+*Last updated: 2026-07-27 - All 10 issues in Section 11 resolved*

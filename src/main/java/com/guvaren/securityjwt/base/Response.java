@@ -2,12 +2,21 @@ package com.guvaren.securityjwt.base;
 
 import com.guvaren.securityjwt.enums.CustomStatus;
 import lombok.Builder;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 
 @Builder
 public record Response<T>(int status, String message, T data) {
     public static <T> Response<T> success(T data) {
         return Response.of(HttpStatus.OK, CustomStatus.SUCCESS.getMessage(), data);
+    }
+
+    public static <T> Response<PageResponse<T>> successPage(Page<T> page) {
+        return Response.of(
+                HttpStatus.OK,
+                CustomStatus.SUCCESS.getMessage(),
+                PageResponse.from(page)
+        );
     }
 
     public static <T> Response<T> created(T data) {
