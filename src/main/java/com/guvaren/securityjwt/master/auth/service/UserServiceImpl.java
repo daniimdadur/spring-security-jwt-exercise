@@ -10,8 +10,10 @@ import com.guvaren.securityjwt.master.auth.repository.RoleRepo;
 import com.guvaren.securityjwt.master.auth.repository.UserRepo;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,6 +22,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserServiceImpl implements UserService {
     private final UserRepo userRepo;
     private final RoleRepo roleRepo;
@@ -52,6 +55,12 @@ public class UserServiceImpl implements UserService {
             user.getRoles().addAll(roles);
         }
         return "User roles updated successfully";
+    }
+
+    @Scheduled(cron = "0 0 3 * * 0")
+    public void cleanUp() {
+        int count = this.userRepo.permanentDeleteSoftDeleted();
+        log.info("Deleted {} users", count);
     }
 
     private UserRes convertToUserRes(UserEntity user) {

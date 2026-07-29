@@ -201,7 +201,7 @@ public class RefreshTokenService {
      * Clean up expired tokens (should be called periodically by a scheduler)
      */
     @Transactional
-    @Scheduled(cron = "0 0 3 * * ?") // Run at 3 AM daily
+    @Scheduled(cron = "0 0 3 * * ?")
     public void cleanUpExpiredTokens() {
         LocalDateTime now = LocalDateTime.now();
         int deletedCount = this.refreshTokenRepo.deleteByExpiredBefore(now);

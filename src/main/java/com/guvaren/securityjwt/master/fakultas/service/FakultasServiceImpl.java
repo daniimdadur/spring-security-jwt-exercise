@@ -83,10 +83,10 @@ public class FakultasServiceImpl implements FakultasService {
         return convertEntityToRes(entity);
     }
 
-    //@Scheduled(cron = "0 0 0 * * *") deleted at 12 pm everyday
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(cron = "0 0 3 * * 7")
+    //@Scheduled(fixedRate = 60000)
     public void cleanUp() {
-        int count = this.fakultasRepo.deleteByDeletedAtIsNotNull();
+        int count = this.fakultasRepo.permanentDeleteSoftDeleted();
         log.info("Deleted {} fakultas", count);
     }
 
